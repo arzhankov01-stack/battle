@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Битва треков</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Manrope:wght@500;700&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0f0c17;
+    --bg-2: #181325;
+    --ink: #f6f2ff;
+    --ink-dim: #a79fbd;
+    --line: #2b2340;
+    --lime: #c9ff3f;
+    --pink: #ff4d8d;
+    --blue: #5b6bff;
+    --on-lime: #12130a;
+    --on-pink: #1c0710;
+    --on-blue: #ffffff;
+    --font-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+    --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { background: var(--bg); }
+  body {
+    margin: 0;
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+    color: var(--ink);
+    font: 500 16px/1.5 var(--font-body);
+    background:
+      radial-gradient(60vmax 40vmax at 100% -10%, rgba(91,107,255,.22), transparent 60%),
+      radial-gradient(50vmax 40vmax at -10% 110%, rgba(255,77,141,.18), transparent 60%),
+      var(--bg);
+    min-height: 100%;
+  }
+  .wrap { max-width: 980px; margin-inline: auto; display: flex; flex-direction: column; gap: 28px; }
+  header { display: flex; flex-direction: column; gap: 12px; }
+  .tag {
+    align-self: flex-start;
+    font: 800 12px/1 var(--font-display);
+    letter-spacing: .12em; text-transform: uppercase;
+    padding: 8px 12px; border-radius: 999px;
+    background: var(--lime); color: var(--on-lime);
+    transform: rotate(-2deg);
+  }
+  h1 {
+    margin: 0;
+    font: 800 clamp(34px, 8vw, 68px)/1 var(--font-display);
+    letter-spacing: -.02em;
+    text-wrap: balance;
+  }
+  h1 .hl { color: var(--lime); }
+  .lead { margin: 0; color: var(--ink-dim); font-size: 18px; max-width: 46ch; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .card {
+    position: relative;
+    border-radius: 28px; padding: 22px 22px 24px;
+    min-height: 300px;
+    display: flex; flex-direction: column; justify-content: space-between; gap: 20px;
+    color: var(--fg); background: var(--bgc);
+    outline: 4px solid transparent; outline-offset: 4px;
+    transition: transform .18s ease, outline-color .18s ease;
+  }
+  .card:nth-child(1) { --bgc: var(--lime); --fg: var(--on-lime); transform: rotate(-1.2deg); }
+  .card:nth-child(2) { --bgc: var(--pink); --fg: var(--on-pink); transform: rotate(.8deg); }
+  .card:nth-child(3) { --bgc: var(--blue); --fg: var(--on-blue); transform: rotate(-.6deg); }
+  .card.picked { outline-color: var(--ink); transform: rotate(0) translateY(-6px); }
+  .card .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .card .who { font: 700 13px/1 var(--font-body); letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+  .card .name { font: 800 clamp(24px, 4vw, 30px)/1.05 var(--font-display); letter-spacing: -.01em; }
+  .check {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--fg); color: var(--bgc);
+    font: 800 18px/1 var(--font-display);
+    transform: scale(0); transition: transform .2s cubic-bezier(.3,1.6,.5,1);
+  }
+  .card.picked .check { transform: scale(1); }
+
+  .eq { display: flex; align-items: flex-end; gap: 5px; height: 44px; }
+  .eq i { width: 8px; border-radius: 4px; background: var(--fg); opacity: .85; height: 20%; }
+  .card.playing .eq i { animation: eq 1s ease-in-out infinite; }
+  .eq i:nth-child(2) { animation-delay: -.3s; }
+  .eq i:nth-child(3) { animation-delay: -.6s; }
+  .eq i:nth-child(4) { animation-delay: -.15s; }
+  .eq i:nth-child(5) { animation-delay: -.45s; }
+  @keyframes eq { 0%, 100% { height: 20%; } 50% { height: 100%; } }
+
+  .player { display: flex; align-items: center; gap: 12px; }
+  .play {
+    flex: none; width: 52px; height: 52px; border-radius: 50%; border: 0; cursor: pointer;
+    background: var(--fg); color: var(--bgc);
+    display: grid; place-items: center;
+    transition: transform .15s ease;
+  }
+  .play:hover { transform: scale(1.08); }
+  .play:focus-visible, .pick:focus-visible, .copy:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .play svg { width: 22px; height: 22px; fill: currentColor; }
+  .play .ic-pause { display: none; }
+  .card.playing .ic-play { display: none; }
+  .card.playing .ic-pause { display: block; }
+  .track { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .seek { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 999px; background: rgba(0,0,0,.25); outline: none; cursor: pointer; margin: 0; }
+  .card:nth-child(3) .seek { background: rgba(255,255,255,.3); }
+  .seek::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--fg); border: 0; }
+  .seek::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--fg); border: 0; }
+  .seek:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+  .time { font: 700 13px/1 var(--font-body); font-variant-numeric: tabular-nums; opacity: .8; }
+
+  .pick {
+    border: 0; cursor: pointer; border-radius: 999px; padding: 14px 20px;
+    font: 800 13px/1 var(--font-display); letter-spacing: .02em;
+    background: transparent; color: var(--fg); box-shadow: inset 0 0 0 2px var(--fg);
+    transition: background .15s ease, color .15s ease;
+  }
+  .pick:hover, .card.picked .pick { background: var(--fg); color: var(--bgc); }
+
+  .vote {
+    border-radius: 28px; padding: 24px;
+    background: var(--bg-2); border: 1px dashed var(--lime);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .vote .txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .vote b { font: 800 clamp(18px, 3.5vw, 24px)/1.15 var(--font-display); }
+  .vote span { color: var(--ink-dim); }
+  .copy {
+    border: 0; cursor: pointer; border-radius: 999px; padding: 16px 26px;
+    font: 800 15px/1 var(--font-display);
+    background: var(--ink); color: var(--bg);
+    transition: transform .15s ease, opacity .15s ease;
+  }
+  .copy:hover:not(:disabled) { transform: scale(1.04); }
+  .copy:disabled { opacity: .35; cursor: not-allowed; }
+  .fallback { width: 100%; }
+  .fallback input {
+    width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); font: 700 16px var(--font-body);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card.playing .eq i { animation: none; height: 70%; }
+    .card, .check, .play, .copy { transition: none; }
+  }
+
+  .msg { padding: 18px 22px; border-radius: 20px; background: var(--bg-2); border: 1px solid var(--line); color: var(--ink-dim); }
+  .msg.err { border-color: var(--pink); color: var(--pink); }
+  .go {
+    border: 0; cursor: pointer; border-radius: 999px; padding: 18px 32px;
+    font: 800 16px/1 var(--font-display); background: var(--ink); color: var(--bg);
+    transition: transform .15s ease, opacity .15s ease;
+  }
+  .go:hover:not(:disabled) { transform: scale(1.04); }
+  .go:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+  .go:disabled { opacity: .35; cursor: not-allowed; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+  .hint { color: var(--ink-dim); font-size: 15px; }
+  .results { border-radius: 28px; padding: 24px; background: var(--bg-2); border: 1px dashed var(--lime); display: flex; flex-direction: column; gap: 20px; }
+  .results h2 { margin: 0; font: 800 22px/1.1 var(--font-display); }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: baseline; }
+  .row .label { font-weight: 700; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .row .num { font: 800 22px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+  .row .num small { font: 700 13px/1 var(--font-body); color: var(--ink-dim); margin-left: 6px; }
+  .bar { grid-column: 1 / -1; height: 16px; border-radius: 999px; background: var(--bg); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--c); transition: width .6s cubic-bezier(.2,.8,.2,1); }
+  .lead-pill { font: 800 11px/1 var(--font-display); letter-spacing: .08em; padding: 6px 9px; border-radius: 999px; background: var(--lime); color: var(--on-lime); }
+  .total { color: var(--ink-dim); } .total b { color: var(--ink); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="tag">Голосование</span>
+    <h1>Битва <span class="hl">треков</span></h1>
+    <p class="lead">Три песни, один победитель. Нажми на play, послушай и выбери ту, что качает больше всех.</p>
+  </header>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="actions" id="actions">
+    <button class="go" id="goBtn" type="button" disabled>Отдать голос</button>
+    <span class="hint" id="hint">Нажми «Мой выбор» на нужной карточке.</span>
+  </div>
+
+  <section class="results" id="results" hidden aria-live="polite"></section>
+  <div class="msg err" id="err" hidden></div>
+</div>
+
+<script type="module">
+// ===== 1. ВСТАВЬ СЮДА НАСТРОЙКИ FIREBASE (шаг 4 в инструкции) =====
+const firebaseConfig = {
+  apiKey: "ВСТАВЬ_СЮДА",
+  authDomain: "ВСТАВЬ_СЮДА",
+  projectId: "ВСТАВЬ_СЮДА",
+  storageBucket: "ВСТАВЬ_СЮДА",
+  messagingSenderId: "ВСТАВЬ_СЮДА",
+  appId: "ВСТАВЬ_СЮДА"
+};
+// ===================================================================
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const SONGS = [
+  { id: "amir1", who: "Амир", name: "Песня Амира 1", src: "audio/amir1.mp3", color: "var(--lime)" },
+  { id: "amir2", who: "Амир", name: "Песня Амира 2", src: "audio/amir2.mp3", color: "var(--pink)" },
+  { id: "vova",  who: "Вова", name: "Песня Вовы",    src: "audio/vova.mp3",  color: "var(--blue)" }
+];
+const cardsEl = document.getElementById("cards");
+const goBtn = document.getElementById("goBtn");
+const hint = document.getElementById("hint");
+const resultsEl = document.getElementById("results");
+const errEl = document.getElementById("err");
+const LS_KEY = "battle_voted_v1";
+
+let picked = null, current = null, tally = { amir1: 0, amir2: 0, vova: 0 }, voted = null, ref = null, sending = false;
+try { voted = localStorage.getItem(LS_KEY); } catch (e) {}
+if (voted && !SONGS.some(s => s.id === voted)) voted = null;
+
+function fmt(s) { if (!isFinite(s)) s = 0; const m = Math.floor(s / 60), r = Math.floor(s % 60); return m + ":" + (r < 10 ? "0" : "") + r; }
+function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+const SVG_PLAY = '<svg class="ic-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+const SVG_PAUSE = '<svg class="ic-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+
+const pickBtns = [];
+SONGS.forEach(s => {
+  const card = el("div", "card");
+  const top = el("div", "top");
+  top.appendChild(el("span", "who", s.who));
+  top.appendChild(el("span", "check", "✓"));
+  card.appendChild(top);
+  const eq = el("div", "eq");
+  for (let i = 0; i < 5; i++) eq.appendChild(document.createElement("i"));
+  card.appendChild(eq);
+  card.appendChild(el("div", "name", s.name));
+
+  const audio = new Audio();
+  audio.preload = "metadata";
+  audio.src = s.src;
+
+  const player = el("div", "player");
+  const play = el("button", "play");
+  play.type = "button";
+  play.setAttribute("aria-label", "Слушать: " + s.name);
+  play.innerHTML = SVG_PLAY + SVG_PAUSE;
+  const track = el("div", "track");
+  const seek = document.createElement("input");
+  seek.type = "range"; seek.className = "seek"; seek.min = "0"; seek.max = "1000"; seek.value = "0";
+  seek.id = "seek-" + s.id;
+  seek.setAttribute("aria-label", "Перемотка: " + s.name);
+  const time = el("div", "time", "0:00");
+  track.appendChild(seek); track.appendChild(time);
+  player.appendChild(play); player.appendChild(track);
+  card.appendChild(player);
+
+  const pick = el("button", "pick", "Мой выбор");
+  pick.type = "button";
+  card.appendChild(pick);
+  pickBtns.push({ pick, card, s });
+
+  const stateText = () => { const d = audio.duration; time.textContent = fmt(audio.currentTime) + (isFinite(d) ? " / " + fmt(d) : ""); };
+  audio.addEventListener("loadedmetadata", stateText);
+  audio.addEventListener("timeupdate", () => {
+    if (isFinite(audio.duration) && audio.duration > 0) seek.value = String(Math.round(audio.currentTime / audio.duration * 1000));
+    stateText();
+  });
+  audio.addEventListener("ended", () => { card.classList.remove("playing"); seek.value = "0"; audio.currentTime = 0; stateText(); });
+  audio.addEventListener("pause", () => card.classList.remove("playing"));
+  audio.addEventListener("play", () => card.classList.add("playing"));
+  seek.addEventListener("input", () => { if (isFinite(audio.duration)) audio.currentTime = audio.duration * Number(seek.value) / 1000; });
+  play.addEventListener("click", () => {
+    if (audio.paused) {
+      if (current && current !== audio) current.pause();
+      current = audio;
+      audio.play().catch(() => {});
+    } else audio.pause();
+  });
+  pick.addEventListener("click", () => {
+    if (voted) return;
+    picked = s; refreshPicks(); refreshAction();
+  });
+  cardsEl.appendChild(card);
+});
+
+function refreshPicks() {
+  const who = voted || (picked && picked.id);
+  pickBtns.forEach(({ pick, card, s }) => {
+    card.classList.toggle("picked", who === s.id);
+    pick.disabled = !!voted;
+    pick.style.cursor = voted ? "default" : "pointer";
+  });
+}
+function refreshAction() {
+  if (voted) {
+    goBtn.hidden = true;
+    const s = SONGS.find(x => x.id === voted);
+    hint.textContent = "Голос принят. Ты выбрал: " + s.name + ".";
+    return;
+  }
+  goBtn.hidden = false;
+  goBtn.disabled = !picked || sending || !ref;
+  goBtn.textContent = sending ? "Отправляю…" : "Отдать голос";
+  hint.textContent = picked ? "Ты выбрал: " + picked.name + ". Голос можно отдать один раз." : "Нажми «Мой выбор» на нужной карточке.";
+}
+function showError(t) { errEl.textContent = t; errEl.hidden = !t; }
+
+function renderResults() {
+  resultsEl.textContent = "";
+  if (!voted) { resultsEl.hidden = true; return; }
+  resultsEl.hidden = false;
+  const total = SONGS.reduce((t, s) => t + (tally[s.id] || 0), 0);
+  const max = Math.max(...SONGS.map(s => tally[s.id] || 0));
+  const leaders = SONGS.filter(s => (tally[s.id] || 0) === max);
+  resultsEl.appendChild(el("h2", null, "Результаты"));
+  SONGS.forEach(s => {
+    const n = tally[s.id] || 0;
+    const pct = total ? Math.round(n * 100 / total) : 0;
+    const row = el("div", "row");
+    const label = el("div", "label");
+    label.appendChild(el("span", null, s.name));
+    if (total > 0 && leaders.length === 1 && leaders[0].id === s.id) label.appendChild(el("span", "lead-pill", "ЛИДИРУЕТ"));
+    row.appendChild(label);
+    const num = el("div", "num", String(n));
+    num.appendChild(el("small", null, pct + "%"));
+    row.appendChild(num);
+    const bar = el("div", "bar");
+    const fill = document.createElement("i");
+    fill.style.setProperty("--c", s.color);
+    bar.appendChild(fill);
+    row.appendChild(bar);
+    resultsEl.appendChild(row);
+    requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = pct + "%"; }));
+  });
+  const t = el("div", "total");
+  t.appendChild(document.createTextNode("Всего голосов: "));
+  t.appendChild(el("b", null, String(total)));
+  resultsEl.appendChild(t);
+}
+
+goBtn.addEventListener("click", async () => {
+  if (!picked || sending || voted || !ref) return;
+  sending = true; showError(""); refreshAction();
+  try {
+    await setDoc(ref, { [picked.id]: increment(1) }, { merge: true });
+    voted = picked.id;
+    try { localStorage.setItem(LS_KEY, voted); } catch (e) {}
+  } catch (e) {
+    showError("Не получилось отправить голос. Проверь интернет и попробуй ещё раз.");
+  }
+  sending = false; refreshPicks(); refreshAction(); renderResults();
+});
+
+const configured = !Object.values(firebaseConfig).some(v => String(v).startsWith("ВСТАВЬ"));
+if (!configured) {
+  showError("Firebase ещё не подключён: вставь настройки в начале файла index.html.");
+} else {
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    ref = doc(db, "tally", "main");
+    onSnapshot(ref, snap => {
+      const d = snap.exists() ? snap.data() : {};
+      tally = { amir1: d.amir1 || 0, amir2: d.amir2 || 0, vova: d.vova || 0 };
+      renderResults(); refreshAction();
+    }, () => showError("Не получается загрузить результаты. Проверь правила базы (шаг 3)."));
+  } catch (e) {
+    showError("Ошибка подключения к Firebase. Проверь настройки в index.html.");
+  }
+}
+refreshPicks(); refreshAction(); renderResults();
+</script>
+</body>
+</html>
